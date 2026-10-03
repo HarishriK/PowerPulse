@@ -1,0 +1,257 @@
+# =============================================================================
+# PowerPulse SoC configuration -- THE single source of truth.
+#
+# Everything downstream is generated from this file by `make gen`:
+#   * interconnect RTL                  tools/gen_interconnect.py
+#   * C memory-map header               tools/gen_interconnect.py
+#   * SV memory-map package             tools/gen_interconnect.py
+#   * generated linker script           tools/gen_interconnect.py
+#   * make fragment                     tools/gen_interconnect.py
+#   * human-readable map table          tools/gen_interconnect.py
+#   * VeeR core configuration snapshot   tools/gen_veer_config.py
+#
+# Never hardcode an address, width, size, clock or baud rate anywhere else.
+# Every parameter is documented in docs/config/parameters.md.
+# =============================================================================
+
+project:
+  name: powerpulse
+  # Free-form short description, used in doc headers.
+  description: "Adaptive low-power-aware RISC-V SoC on VeeR EL2"
+
+# -----------------------------------------------------------------------------
+# Bus
+# -----------------------------------------------------------------------------
+bus:
+  # VeeR's three AXI masters (IFU, LSU, SB) are 64-bit; the interconnect is 32-bit.
+  core_data_width: 64          # 32 or 64
+  xbar_data_width: 32          # 32 only (downsizer is 2:1)
+  addr_width: 32
+  # AXI ID width used on *both* sides of the width adapters, so that IDs need no
+  # width conversion.  VeeR uses 3 bits (IFU_BUS_TAG = LSU_BUS_TAG = 3,
+  # SB_BUS_TAG = 1); the extra bit is tied low.  See docs/veer_integration/.
+  id_width: 4
+  # Round-robin arbitration among the masters for every slave, per AXI channel.
+  # Only supported value today.
+  arbitration: round_robin
+  # AXI4-Lite slaves cannot accept bursts, so a bridge splits a burst into
+  # single-beat AXI4-Lite transfers.  Legal per the AXI4-Lite specification.
+  axil_split_bursts: true
+
+# -----------------------------------------------------------------------------
+# VeeR EL2 core
+# -----------------------------------------------------------------------------
+core:
+  # Pinned upstream directory (inside the repo, unmodified).
+  rtl_dir: rtl/core/veer_el2
+  # Options handed to the upstream `configs/veer.config` generator.
+  # Anything not listed here keeps the upstream default.
+  veer_options:
+    # ICCM / DCCM are OFF: all instructions and data live in the external AXI
+    # memories below.  Their address regions therefore do not appear in the user
+    # memory map and the map checker enforces that.
+    iccm_enable: 0
+    dccm_enable: 0
+    # 32 KiB, 4-way, 2-bank I-cache stays enabled (IFU issues burst fetches).
+    icache_enable: 1
+  # Reset vector. Must lie inside the instruction memory region below; the map
+  # checker fails the build otherwise.  el2_veer_wrapper takes rst_vec[31:1].
+  reset_vector: 0x80000000
+
+# -----------------------------------------------------------------------------
+# Clocks
+# -----------------------------------------------------------------------------
+clock:
+  # SoC / bus clock, and the UART's fixed_clk domain.
+  freq_hz: 100000000
+  # Simulation clock period in ps; derived from freq_hz unless overridden.
+  # period_ps: 10000
+
+# -----------------------------------------------------------------------------
+# System reset
+# -----------------------------------------------------------------------------
+reset:
+  # Single polarity/style for the whole project: active-low, synchronous-assert
+  # is NOT used -- the SoC uses an active-low asynchronous reset.
+  #   rst_l : active low, asynchronous assert / synchronous release
+  assert_level: low
+  style: async_assert_sync_release
+  # Number of cycles the testbench holds reset asserted.
+  cycles: 20
+
+# -----------------------------------------------------------------------------
+# Instruction and data memory (external AXI slaves, hex loaded)
+# -----------------------------------------------------------------------------
+memory:
+  # Hex file word width in bytes, as consumed by the memory slaves.
+  hex_word_bytes: 4
+  load_from: hex
+  # plusarg used to point a simulation at a hex image
+  plusarg: "+hex"
+
+# -----------------------------------------------------------------------------
+# UART
+# -----------------------------------------------------------------------------
+uart:
+  # Serial parameters.  The vendored axi-lite_uart IP has no runtime baud
+  # register on its native side beyond LCR/divisor, so the divisor is computed
+  # here and written by the reset value of the divider register.
+  baud: 115200
+  data_bits: 8
+  stop_bits: 1
+  parity: none
+  # Interrupt line: reserved for Phase 2 (wired to a known state now).
+  irq_wired_to_core: false
+
+# -----------------------------------------------------------------------------
+# Slave slots.
+#
+# Rules (enforced by the map checker in tools/map_checker.py):
+#   * every slot exists from day one; `enabled: false` routes the slot to the
+#     decode-error stub slave in the SoC top, never to nothing;
+#   * `protocol: axil` inserts an AXI4 -> AXI4-Lite bridge in front of the slot;
+#   * `sim_only: true` slots only exist when the DUT is built for simulation
+#     (`+define+PP_SIM`); in a synthesis build they decode as errors;
+#   * `base` must be a power-of-two multiple of `size`, and `size` >= 4 KiB;
+#   * ranges must not overlap and must not overlap a core-internal region.
+#
+# `module` is the SoC-top instance name fragment; `src` is the RTL to compile.
+# -----------------------------------------------------------------------------
+slaves:
+  - name: imem
+    module: imem
+    base: 0x80000000
+    size: 0x00040000          # 256 KiB
+    protocol: axi             # native AXI4, no bridge
+    bridge: false
+    enabled: true
+    sim_only: false
+    kind: ram
+    hex: true
+
+  - name: dmem
+    module: dmem
+    base: 0x80040000
+    size: 0x00040000          # 256 KiB
+    protocol: axi
+    bridge: false
+    enabled: true
+    sim_only: false
+    kind: ram
+    hex: true
+
+  - name: uart
+    module: uart
+    base: 0x40000000
+    size: 0x00001000          # 4 KiB window; the IP decodes 32 bytes of it
+    protocol: axil
+    bridge: true
+    enabled: true
+    sim_only: false
+    kind: ip
+    irq: true
+
+  - name: timer
+    module: timer
+    base: 0x40001000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: false            # Phase 2 (P2-00)
+    sim_only: false
+    kind: ip
+
+  - name: gpio
+    module: gpio
+    base: 0x40002000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: false            # Phase 2 (P2-00)
+    sim_only: false
+    kind: ip
+
+  - name: hap
+    module: hap
+    base: 0x40003000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: false            # Phase 2 (P2-02)
+    sim_only: false
+    kind: ip
+
+  - name: ppmc
+    module: ppmc
+    base: 0x40004000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: false            # Phase 2 (P2-03)
+    sim_only: false
+    kind: ip
+
+  - name: awec
+    module: awec
+    base: 0x40005000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: false            # Phase 2 (P2-04)
+    sim_only: false
+    kind: ip
+
+  - name: status
+    module: status
+    base: 0x4000f000
+    size: 0x00001000
+    protocol: axil
+    bridge: true
+    enabled: true
+    sim_only: true            # testbench-only PASS/FAIL reporter (P1-08)
+    kind: tb
+
+# -----------------------------------------------------------------------------
+# Software build
+# -----------------------------------------------------------------------------
+software:
+  # RISC-V toolchain.  The `/opt` location is a *parameter*, never hardcoded in
+  # RTL or scripts; override on the command line with CONFIG or by editing here.
+  toolchain_path: /opt/riscv/bin
+  toolchain_prefix: riscv64-unknown-elf-
+  # VeeR EL2 is RV32IMC; the vendored core has no FPU/D extension.
+  isa: rv32imc
+  abi: ilp32
+  march: rv32imc_zicsr
+  mabi: ilp32
+  opt: -O2
+  # Start/end of the software image inside the instruction memory.
+  # Checked against the `imem` slot by the map checker.
+  load_addr: 0x80000000
+
+# -----------------------------------------------------------------------------
+# Simulation
+# -----------------------------------------------------------------------------
+simulation:
+  # Hard limit per test; the testbench watchdog turns an overrun into a FAIL.
+  # A test may override this in its settings file.
+  default_timeout_ns: 2000000
+  # Seed used when the command line does not give one.
+  default_seed: 1
+  # Seeds swept by `make regress SEEDS=...`
+  seeds: [1, 2, 3]
+  # Waveforms are always dumped; there is deliberately no on/off switch.
+  waves: always
+  # VCS compile flags.  -kdb gives Verdi a knowledge database for the run.
+  vcs_compile_flags: "-debug_access+all -kdb -timescale=1ns/1ps -assert svaext"
+  vcs_elab_flags: "-debug_access+all -timescale=1ns/1ps -assert svaext"
+
+# -----------------------------------------------------------------------------
+# Address regions reserved by the core itself.  The map checker fails the build
+# if a user slot overlaps any of them.
+# -----------------------------------------------------------------------------
+core_regions:
+  - name: pic
+    base: 0x00080000
+    size: 0x00001000
+    note: "VeeR platform interrupt controller (el2_pic_ctrl)"
