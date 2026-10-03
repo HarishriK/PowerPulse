@@ -229,7 +229,10 @@ module pp_axi_downsize #(
     // latched word0 and only toggles for wide beats, so it already names the
     // right output word in both cases.
     wire [WORD_BITS-1:0]    w_cur_word = w_word;
-    wire [DATA_WIDTH_OUT-1:0] w_cur_data = wq_head_data[(w_cur_word * OUT_BYTES) +: DATA_WIDTH_OUT];
+    // NOTE: the slice offset is in *bits*, so it steps by DATA_WIDTH_OUT.  Storing
+    // the byte count here and using it as a bit offset silently mis-selects the
+    // second half of a wide beat.
+    wire [DATA_WIDTH_OUT-1:0] w_cur_data = wq_head_data[(w_cur_word * DATA_WIDTH_OUT) +: DATA_WIDTH_OUT];
     wire [OUT_STRB-1:0]      w_cur_strb = wq_head_strb[(w_cur_word * OUT_STRB)  +: OUT_STRB];
     wire                     w_cur_last = wq_head_last && (w_left == 9'd1);
 
@@ -324,7 +327,16 @@ module pp_axi_downsize #(
                             w_state <= W_RESP;
                         end else begin
                             w_left <= w_left - 9'd1;
-                            w_word <= w_wide_q ? ~w_word : w_word;
+                            if (w_out_last_sub) begin
+                                // moving on to the next *wide* beat.  The next wide
+                                // beat of a linear burst starts at a fresh aligned
+                                // address, so word0 is word 0 again.
+                                w_word <= {WORD_BITS{1'b0}};
+                            end else begin
+                                // second half of the current wide beat
+                                w_word <= ~w_word;
+                                w_addr <= w_addr + (32'd1 << SIZE_NARROW);
+                            end
                         end
                     end
                 end
@@ -423,7 +435,8 @@ module pp_axi_downsize #(
                 R_DATA: begin
                     if (m_axi_rvalid && m_axi_rready) begin
                         r_acc <= (r_acc_base & ~r_cur_mask)
-                               | ({DATA_WIDTH_IN{m_axi_rdata}} & r_cur_mask);
+                               | ({{(DATA_WIDTH_IN-DATA_WIDTH_OUT){1'b0}},
+                                   m_axi_rdata} & r_cur_mask);
                         r_worst <= worse(r_worst, m_axi_rresp);
                         if (m_axi_rlast) begin
                             r_done <= 1'b1;

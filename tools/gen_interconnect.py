@@ -437,10 +437,15 @@ def gen_crossbar(cfg, path):
     a("        assign %s = m_axi_wstrb[((w_own)*%d) +: %d];" % (_sl("x_wstrb", W_.STRB), W_.STRB, W_.STRB))
     a("        assign %s = m_axi_wlast[w_own];" % _sl("x_wlast", 1))
     a("")
+    # WREADY must only rise once this transaction's AW has actually been accepted
+    # downstream.  A slave commonly holds WREADY low until it has seen the AW, and
+    # some hold it high immediately; asserting master-side WREADY early would let
+    # the master believe a beat was taken when nothing downstream can accept it,
+    # and the beat would be silently dropped.
     for m in range(M):
-        a("        assign %s = (w_own == %d) && %s;"
+        a("        assign %s = (w_own == %d) && w_aw_sent && !w_b_buf_v && %s;"
           % (_fs("w_ready_f", m, 1), m, _sl("x_wready", 1)))
-        a("        assign w_ready_flat[(g)*M_COUNT + %d] = (w_own == %d) && %s;"
+        a("        assign w_ready_flat[(g)*M_COUNT + %d] = (w_own == %d) && w_aw_sent && !w_b_buf_v && %s;"
           % (m, m, _sl("x_wready", 1)))
     a("")
     a("        wire w_last_beat = w_act && w_aw_sent && %s && %s && %s;"

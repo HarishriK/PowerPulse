@@ -425,24 +425,22 @@ module pp_bus_harness #(
     );
 
     // ---- bring-up probe ---------------------------------------------------
-    integer bp;
-    initial bp = 0;
+    integer bq;
+    initial bq = 0;
     always @(posedge clk) begin
-        if (rst_n && bp < 40) begin
-            bp = bp + 1;
-            $display({"[bp] xbar(w_dd=%b w_ack=%b bv=%b br=%b bufv=%b buff=%b s_bv=%b) ",
-                      "ram1(awv=%b awr=%b wv=%b wr=%b bvalid=%b bready=%b) ",
-                      "ds(wst=%0d m_bv=%b m_br=%b s_bv=%b) m0(bv=%b br=%b)"},
-                     dut.u_xbar.w_data_done, dut.u_xbar.w_done_ack,
-                     dut.u_xbar.m_axi_bvalid[0], dut.u_xbar.m_axi_bready[0],
-                     dut.u_xbar.s_b_buf_valid[0], dut.u_xbar.s_b_buf_full[0],
-                     dut.u_xbar.s_axi_bvalid[1], dut.u_xbar.s_axi_bready[1],
-                     dut.u_dmem.s_axi_awvalid, dut.u_dmem.s_axi_awready,
-                     dut.u_dmem.s_axi_wvalid, dut.u_dmem.s_axi_wready,
-                     dut.u_dmem.s_axi_bvalid, dut.u_dmem.s_axi_bready,
-                     dut.u_ds_m0.w_state, dut.u_ds_m0.m_axi_bvalid,
-                     dut.u_ds_m0.m_axi_bready, dut.u_ds_m0.s_axi_bvalid,
-                     m0_bvalid, m0_bready);
+        if (rst_n && bq < 400) begin
+            bq = bq + 1;
+            if (dut.u_xbar.m_axi_rready != 3'b000)
+                $display({"[bpx] rrdy=%b s1(r_act=%b r_own=%0d ar_sent=%b bufv=%b bufend=%b) ",
+                          "s2(r_act=%b r_own=%0d ar_sent=%b bufv=%b) s3(r_act=%b r_own=%0d bufv=%b)"},
+                         dut.u_xbar.m_axi_rready,
+                         dut.u_xbar.g_slave[1].r_act, dut.u_xbar.g_slave[1].r_own,
+                         dut.u_xbar.g_slave[1].r_ar_sent, dut.u_xbar.g_slave[1].r_r_buf_v,
+                         dut.u_xbar.g_slave[1].r_r_buf_end,
+                         dut.u_xbar.g_slave[2].r_act, dut.u_xbar.g_slave[2].r_own,
+                         dut.u_xbar.g_slave[2].r_ar_sent, dut.u_xbar.g_slave[2].r_r_buf_v,
+                         dut.u_xbar.g_slave[3].r_act, dut.u_xbar.g_slave[3].r_own,
+                         dut.u_xbar.g_slave[3].r_r_buf_v);
         end
     end
 

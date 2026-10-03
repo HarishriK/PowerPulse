@@ -128,12 +128,9 @@ module pp_axi_ram #(
     reg                 w_pending;
     reg [ID_WIDTH-1:0]  w_id;
     reg [ADDR_WIDTH-1:0] w_addr;
-    reg [2:0]            w_size;
-
     reg                 r_pending;
     reg [ID_WIDTH-1:0]  r_id;
     reg [ADDR_WIDTH-1:0] r_addr;
-    reg [2:0]            r_size;
     reg [8:0]            r_left;
 
     // write strobe, expanded to the full data width for the read-modify-write
@@ -172,13 +169,11 @@ module pp_axi_ram #(
             w_rsp_valid <= 1'b0;
             w_id        <= {ID_WIDTH{1'b0}};
             w_addr      <= {ADDR_WIDTH{1'b0}};
-            w_size      <= 3'd0;
         end else begin
             if (w_accept) begin
                 w_pending <= 1'b1;
                 w_id      <= s_axi_awid;
                 w_addr    <= s_axi_awaddr;
-                w_size    <= s_axi_awsize;
             end
             // Store every accepted beat.  This is deliberately *not* gated on the
             // response state: a slave may assert BRESP in the very same cycle as
@@ -186,7 +181,9 @@ module pp_axi_ram #(
             if (w_pending && s_axi_wvalid && s_axi_wready) begin
                 mem[w_index] <= (mem[w_index] & ~wstrb_expanded)
                               | (s_axi_wdata & wstrb_expanded);
-                if (!s_axi_wlast) w_addr <= w_addr + (32'd1 << w_size);
+                // The narrow bus is DATA_WIDTH bits wide, so consecutive beats are
+                // always ADDR_LSB bytes apart -- independent of the burst's AW size.
+                if (!s_axi_wlast) w_addr <= w_addr + (32'd1 << ADDR_LSB);
             end
             if (w_last_beat) w_rsp_valid <= 1'b1;
             if (w_done) begin
@@ -220,7 +217,6 @@ module pp_axi_ram #(
             r_rsp_valid <= 1'b0;
             r_id        <= {ID_WIDTH{1'b0}};
             r_addr      <= {ADDR_WIDTH{1'b0}};
-            r_size      <= 3'd0;
             r_left      <= 9'd0;
         end else begin
             if (r_accept) begin
@@ -228,7 +224,6 @@ module pp_axi_ram #(
                 r_rsp_valid <= 1'b1;
                 r_id        <= s_axi_arid;
                 r_addr      <= s_axi_araddr;
-                r_size      <= s_axi_arsize;
                 r_left      <= {1'b0, s_axi_arlen} + 9'd1;
             end else if (r_beat) begin
                 if (s_axi_rlast) begin
@@ -236,7 +231,7 @@ module pp_axi_ram #(
                     r_pending   <= 1'b0;
                 end else begin
                     r_left <= r_left - 9'd1;
-                    r_addr <= r_addr + (32'd1 << r_size);
+                    r_addr <= r_addr + (32'd1 << ADDR_LSB);
                 end
             end
         end
