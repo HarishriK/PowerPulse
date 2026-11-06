@@ -1,0 +1,119 @@
+# =====================================================================
+# PowerPulse root ignore rules
+# See docs/ for the rationale; PHASES.md task P1-01.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# The entire simulation tree is disposable build output.
+# ---------------------------------------------------------------------
+/sim/
+
+# ---------------------------------------------------------------------
+# Generated files. Only the config and the generators are committed.
+#   - interconnect RTL            (tools/gen_interconnect.py)
+#   - VeeR configuration snapshot (tools/gen_veer_config.py)
+#   - C memory-map header         (tools/gen_interconnect.py)
+#   - SV memory-map package       (tools/gen_interconnect.py)
+#   - generated linker script     (tools/gen_interconnect.py)
+#   - generated docs map tables   (tools/gen_interconnect.py)
+# ---------------------------------------------------------------------
+/sim/gen/
+**/gen/
+*.generated.sv
+*.generated.svh
+*.generated.h
+*.generated.ld
+generated/
+*_generated.*
+
+# ---------------------------------------------------------------------
+# VCS outputs
+# ---------------------------------------------------------------------
+simv
+simv.daidir/
+csrc/
+vc_hdrs.h
+*.daidir/
+*.vpd
+*.vcd
+*.fsdb
+*.vdb
+novas.*
+verdiLog/
+*.log.*
+*.key
+*.so.*
+*.o
+*.a
+uvm_dpi.*
+AN.DB
+DVEfiles/
+simvision.d
+incdir/
+csrc.tmp
+*.vcs_lib_lock
+*.vc_hdrs_lock
+*.vcs_lib_unlock
+
+# Verdi / Verdi knowledge database
+*.vdb
+*.kdb
+*.fsdb
+.KDB/
+verdi*.log
+*.lxt
+*.lxt2
+*.shm
+
+# coverage
+*.ucd
+*.db
+cov_work/
+merged_cov/
+*.vdb.tcl
+
+# ---------------------------------------------------------------------
+# Python caches / virtual environments
+# ---------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# ---------------------------------------------------------------------
+# Software build products outside run folders
+# (run folders live under sim/ and are ignored above)
+# ---------------------------------------------------------------------
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.dis
+*.d
+*.ld.bak
+
+# ---------------------------------------------------------------------
+# Editor / OS clutter
+# ---------------------------------------------------------------------
+*~
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+*.bak
+*.tmp
+*.orig
+*.rej
+
+# ---------------------------------------------------------------------
+# Third-party reference material that is not part of the build
+# ---------------------------------------------------------------------
+/Cores-VeeR-EL2/.git
+/Cores-VeeR-EL2/**/__pycache__
