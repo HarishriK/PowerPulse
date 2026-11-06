@@ -1,0 +1,54 @@
+VIP_Name,Interface_Category,Signal_Name,Direction_wrt_DUT,Width_Bits,Clock_Domain,VIP_Role,Protocol_Function,SVA_Check_Description
+pp_clk_rst_vip,Clock/Reset,clk,Input,1,Async,Active Driver,Master system clock (50 MHz),Clock period and duty cycle stability
+pp_clk_rst_vip,Clock/Reset,rst_n,Input,1,Async,Active Driver,Active-low asynchronous system reset,Reset glitch-free and min 5 cycle duration
+pp_uart_vip,UART Serial,uart_rx,Input,1,clk,Active Driver,Serial input into SoC (115200 baud),Start bit falling edge check and bit duration
+pp_uart_vip,UART Serial,uart_tx,Output,1,clk,Passive Monitor,Serial output from SoC (115200 baud),Frame check: 1 start bit 8 data bits 1 stop bit
+pp_gpio_vip,GPIO Parallel,gpio_in[7:0],Input,8,clk,Active Driver,External digital inputs to SoC,Setup and hold relative to sampling flop
+pp_gpio_vip,GPIO Parallel,gpio_out[7:0],Output,8,clk,Passive Monitor,External digital outputs driven by SoC,Value matches GPIO_OUT register within 2 cycles
+pp_gpio_vip,Interrupts,gpio_irq,Output,1,clk,Passive Monitor,GPIO edge-detect interrupt pulse,Asserts exactly 1 cycle after edge detected
+pp_timer_vip,Interrupts,timer_irq,Output,1,clk,Passive Monitor,Timer overflow interrupt pulse,Asserts exactly when counter decrements from 1 to 0
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awid[7:0],Output,8,clk,Active Driver/Mon,Write address transaction ID,ID unique and matches BID on response
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awaddr[31:0],Output,32,clk,Active Driver/Mon,Write address bus,Address aligned to transfer size
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awlen[7:0],Output,8,clk,Active Driver/Mon,Write burst length (AxLEN=beats-1),Burst length does not exceed 256 beats
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awsize[2:0],Output,3,clk,Active Driver/Mon,Write transfer size,Size matches bus width (010=4B or 011=8B)
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awburst[1:0],Output,2,clk,Active Driver/Mon,Write burst type (FIXED/INCR/WRAP),WRAP bursts power-of-2 and cache aligned
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awvalid,Output,1,clk,Active Driver/Mon,Write address valid handshake,Stable until AWREADY is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_awready,Input,1,clk,Active Driver/Mon,Write address slave ready handshake,Asserted within timeout period
+pp_axi_master_vip,AXI4 Interconnect,m_axi_wdata[63:0],Output,64,clk,Active Driver/Mon,Write data bus,Data valid when WVALID is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_wstrb[7:0],Output,8,clk,Active Driver/Mon,Write byte strobes,Strobes match valid lane addresses
+pp_axi_master_vip,AXI4 Interconnect,m_axi_wlast,Output,1,clk,Active Driver/Mon,Write last beat flag,Asserted exactly on last burst beat
+pp_axi_master_vip,AXI4 Interconnect,m_axi_wvalid,Output,1,clk,Active Driver/Mon,Write data valid handshake,Stable until WREADY is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_wready,Input,1,clk,Active Driver/Mon,Write data slave ready handshake,Asserted within timeout period
+pp_axi_master_vip,AXI4 Interconnect,m_axi_bid[7:0],Input,8,clk,Active Driver/Mon,Write response ID,Matches AWID of corresponding write address
+pp_axi_master_vip,AXI4 Interconnect,m_axi_bresp[1:0],Input,2,clk,Active Driver/Mon,Write response status (OKAY/SLVERR/DECERR),Valid status code (2'b00 or 2'b11 for unmapped)
+pp_axi_master_vip,AXI4 Interconnect,m_axi_bvalid,Input,1,clk,Active Driver/Mon,Write response valid handshake,Stable until BREADY is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_bready,Output,1,clk,Active Driver/Mon,Write response master ready handshake,Asserted to accept write response
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arid[7:0],Output,8,clk,Active Driver/Mon,Read address transaction ID,ID matches RID on read data response
+pp_axi_master_vip,AXI4 Interconnect,m_axi_araddr[31:0],Output,32,clk,Active Driver/Mon,Read address bus,Address aligned to transfer size
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arlen[7:0],Output,8,clk,Active Driver/Mon,Read burst length,Burst length <= 256
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arsize[2:0],Output,3,clk,Active Driver/Mon,Read transfer size,Matches bus width
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arburst[1:0],Output,2,clk,Active Driver/Mon,Read burst type,WRAP burst aligned
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arvalid,Output,1,clk,Active Driver/Mon,Read address valid handshake,Stable until ARREADY is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_arready,Input,1,clk,Active Driver/Mon,Read address slave ready handshake,Asserted within timeout period
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rid[7:0],Input,8,clk,Active Driver/Mon,Read data transaction ID,Matches ARID of corresponding read address
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rdata[63:0],Input,64,clk,Active Driver/Mon,Read data bus,Read data stable when RVALID is high
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rresp[1:0],Input,2,clk,Active Driver/Mon,Read response status,Valid status (2'b00 OKAY or 2'b11 DECERR)
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rlast,Input,1,clk,Active Driver/Mon,Read last beat indicator,Asserted on beat count == ARLEN + 1
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rvalid,Input,1,clk,Active Driver/Mon,Read data valid handshake,Stable until RREADY is asserted
+pp_axi_master_vip,AXI4 Interconnect,m_axi_rready,Output,1,clk,Active Driver/Mon,Read data master ready handshake,Asserted to accept read data
+pp_axi_slave_vip,SRAM Memory,imem_axi_awaddr[31:0],Internal Monitored,32,clk,Passive Monitor,IMEM write address (0x80000000 - 0x8003FFFF),Address within IMEM range
+pp_axi_slave_vip,SRAM Memory,dmem_axi_wdata[31:0],Internal Monitored,32,clk,Passive Monitor,DMEM write data bus,Write data stored at target word
+pp_axi_slave_vip,SRAM Memory,dmem_axi_rdata[31:0],Internal Monitored,32,clk,Passive Monitor,DMEM read data bus,Read data matches previous write
+pp_power_sva_vip,Power Sideband,periph_activity[0],Internal Monitored,1,clk,SVA & Assertions,Timer activity pulse,HAP counter 0 resets on assertion
+pp_power_sva_vip,Power Sideband,periph_activity[1],Internal Monitored,1,clk,SVA & Assertions,GPIO activity pulse,HAP counter 1 resets on assertion
+pp_power_sva_vip,Power Sideband,periph_activity[2],Internal Monitored,1,clk,SVA & Assertions,UART activity pulse,HAP counter 2 resets on assertion
+pp_power_sva_vip,Power Sideband,hap_idle[0],Internal Monitored,1,clk,SVA & Assertions,Timer idle status,Asserts when counter >= HAP_IDLE_TH0
+pp_power_sva_vip,Power Sideband,hap_idle[1],Internal Monitored,1,clk,SVA & Assertions,GPIO idle status,Asserts when counter >= HAP_IDLE_TH1
+pp_power_sva_vip,Power Sideband,hap_idle[2],Internal Monitored,1,clk,SVA & Assertions,UART idle status,Asserts when counter >= HAP_IDLE_TH2
+pp_power_sva_vip,Power Sideband,periph_enable[0],Internal Monitored,1,clk,SVA & Assertions,Timer clock/logic enable gate,Timer frozen when enable is 0
+pp_power_sva_vip,Power Sideband,periph_enable[1],Internal Monitored,1,clk,SVA & Assertions,GPIO clock/logic enable gate,GPIO frozen when enable is 0
+pp_power_sva_vip,Power Sideband,periph_enable[2],Internal Monitored,1,clk,SVA & Assertions,UART clock/logic enable gate,UART frozen when enable is 0
+pp_power_sva_vip,Power Sideband,periph_wake[0],Internal Monitored,1,clk,SVA & Assertions,Timer wakeup trigger,Triggers AWEC wakeup_req in next cycle
+pp_power_sva_vip,Power Sideband,periph_wake[1],Internal Monitored,1,clk,SVA & Assertions,GPIO wakeup trigger,Triggers AWEC wakeup_req in next cycle
+pp_power_sva_vip,Power Sideband,periph_wake[2],Internal Monitored,1,clk,SVA & Assertions,UART wakeup trigger,Triggers AWEC wakeup_req in next cycle
+pp_power_sva_vip,Power Sideband,wakeup_req,Internal Monitored,1,clk,SVA & Assertions,AWEC wakeup pulse to PPMC and Core,PPMC restores periph_enable to 111 in next cycle
