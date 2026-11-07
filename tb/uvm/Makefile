@@ -40,7 +40,7 @@ power_test:
 	./simv +UVM_TESTNAME=powerpulse_power_test +UVM_VERBOSITY=$(VERBOSITY) +DUMP -l sim_power_test.log
 
 verdi:
-	$(VERDI_HOME)/bin/verdi -play verdi_signals.tcl &
+	$(VERDI_HOME)/bin/verdi -ssf powerpulse_uvm.fsdb -sswr powerpulse_signals.rc &
 
 clean:
 	rm -rf simv* csrc *.daidir *.log ucli.key *.vcd *.fsdb DVEfiles verdiLog novas.* fsdbreportLog *.txt

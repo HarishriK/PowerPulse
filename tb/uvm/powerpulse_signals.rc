@@ -1,0 +1,45 @@
+Magic 271485
+Revision Verdi_U-2023.03-SP1
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 28 1280 600 240 100
+
+; File list:
+openDirFile -d / "" "/home/student/Music/013/PowerPulse/tb/uvm/powerpulse_uvm.fsdb"
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 0.000000 2000000.000000
+cursor 50000.000000
+marker 0.000000
+
+top 0
+markerPos 0
+
+curSTATUS ByChange
+
+addGroup "1. TB_Control"
+activeDirFile "" "/home/student/Music/013/PowerPulse/tb/uvm/powerpulse_uvm.fsdb"
+addSignal -h 15 /tb_soc_uvm_top/clk
+addSignal -h 15 /tb_soc_uvm_top/soc_if/rst_n
+
+addGroup "2. Procedural_Driving"
+addSignal -h 15 /tb_soc_uvm_top/soc_if/drv_drive_en
+addSignal -h 15 -holdScope drv_uart_rx_reg
+addSignal -h 15 -UNSIGNED -HEX -holdScope drv_gpio_in_reg[7:0]
+
+addGroup "3. DUT_Interfaces"
+addSignal -h 15 /tb_soc_uvm_top/soc_if/uart_rx
+addSignal -h 15 -holdScope uart_tx
+addSignal -h 15 -UNSIGNED -HEX -holdScope gpio_in[7:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope gpio_out[7:0]
+
+addGroup "4. Interrupts_and_Power"
+addSignal -h 15 /tb_soc_uvm_top/soc_if/uart_irq
+addSignal -h 15 -holdScope timer_irq
+addSignal -h 15 -holdScope gpio_irq
+addSignal -h 15 -UNSIGNED -BIN /tb_soc_uvm_top/u_dut/u_fabric/periph_activity[2:0]
+addSignal -h 15 -holdScope wakeup_req
