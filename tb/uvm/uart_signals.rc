@@ -26,8 +26,8 @@ addSignal -h 15 -holdScope uart_tx
 addSignal -h 15 -holdScope uart_irq
 
 addGroup "4. Inside_DUT_Design"
-addSignal -h 15 -UNSIGNED -HEX /tb_uart_top/u_dut/u_fabric/u_uart/u_uart/u_receiver/rx_data_o[7:0]
-addSignal -h 15 -holdScope rx_valid_o
+addSignal -h 15 -UNSIGNED -HEX /tb_uart_top/u_dut/u_fabric/u_uart/u_uart_ip/data_rx_controller_fifo[7:0]
+addSignal -h 15 -holdScope push_controller_rx_fifo
 
 addGroup "5. UART_Monitor (vif.mon_*)"
 addSignal -h 15 -UNSIGNED -HEX /tb_uart_top/uart_if_inst/mon_uart_rx_byte[7:0]

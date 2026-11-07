@@ -40,6 +40,9 @@ vc_hdrs.h
 *.vdb
 novas.*
 verdiLog/
+fsdbreportLog/
+verdi_config_file
+*.log
 *.log.*
 *.key
 *.so.*
