@@ -1,7 +1,7 @@
 // ==============================================================================
 // PowerPulse SoC Verification Environment
 // File: powerpulse_driver.sv
-// Description: UVM Driver driving pins on powerpulse_soc_if
+// Description: UVM Driver driving pins on powerpulse_soc_if via procedural interface tasks
 // ==============================================================================
 
 `ifndef POWERPULSE_DRIVER_SV
@@ -28,10 +28,11 @@ class powerpulse_driver extends uvm_driver #(powerpulse_seq_item);
     endfunction: build_phase
 
     virtual task run_phase(uvm_phase phase);
-        // Default initial boundary signal states
-        vif.rst_n   <= 1'b1;
-        vif.uart_rx <= 1'b1;
-        vif.gpio_in <= 8'h00;
+        // Default initial boundary signal states (set through driver registers)
+        vif.drv_rst_n_reg   <= 1'b1;
+        vif.drv_uart_rx_reg <= 1'b1;
+        vif.drv_gpio_in_reg <= 8'h00;
+        vif.drv_drive_en    <= 1'b1;
 
         forever begin
             seq_item_port.get_next_item(req);
@@ -43,30 +44,23 @@ class powerpulse_driver extends uvm_driver #(powerpulse_seq_item);
     virtual task drive_transaction(powerpulse_seq_item item);
         case (item.trans_type)
             powerpulse_seq_item::TRANS_RESET_PULSE: begin
-                `uvm_info(get_type_name(), $sformatf("Driving Reset pulse for %0d cycles", item.reset_duration_cycles), UVM_HIGH)
-                vif.rst_n <= 1'b0;
-                repeat (item.reset_duration_cycles) @(posedge vif.clk);
-                vif.rst_n <= 1'b1;
-                repeat (5) @(posedge vif.clk);
+                `uvm_info(get_type_name(), $sformatf("Driving Reset pulse for %0d cycles (via interface always block)", item.reset_duration_cycles), UVM_HIGH)
+                vif.drive_reset_pulse(item.reset_duration_cycles);
             end
 
             powerpulse_seq_item::TRANS_UART_TX: begin
-                `uvm_info(get_type_name(), $sformatf("Transmitting UART byte 0x%02h ('%c')", item.uart_byte, item.uart_byte), UVM_MEDIUM)
-                send_uart_byte(item.uart_byte);
+                `uvm_info(get_type_name(), $sformatf("Transmitting UART byte 0x%02h ('%c') into uart_rx (via interface always block)", item.uart_byte, item.uart_byte), UVM_MEDIUM)
+                vif.drive_uart_byte(item.uart_byte, clocks_per_baud);
             end
 
             powerpulse_seq_item::TRANS_GPIO_IN: begin
-                `uvm_info(get_type_name(), $sformatf("Driving GPIO_IN = 0x%02h", item.gpio_data), UVM_MEDIUM)
-                vif.gpio_in <= item.gpio_data;
-                repeat (item.delay_cycles) @(posedge vif.clk);
+                `uvm_info(get_type_name(), $sformatf("Driving GPIO_IN = 0x%02h (via interface always block)", item.gpio_data), UVM_MEDIUM)
+                vif.drive_gpio(item.gpio_data, item.delay_cycles);
             end
 
             powerpulse_seq_item::TRANS_WAKE_BURST: begin
-                `uvm_info(get_type_name(), "Injecting Wakeup Pulse Burst via GPIO[0] toggle", UVM_MEDIUM)
-                vif.gpio_in[0] <= ~vif.gpio_in[0];
-                repeat (10) @(posedge vif.clk);
-                vif.gpio_in[0] <= ~vif.gpio_in[0];
-                repeat (item.delay_cycles) @(posedge vif.clk);
+                `uvm_info(get_type_name(), "Injecting Wakeup Pulse Burst via GPIO[0] toggle (via interface always block)", UVM_MEDIUM)
+                vif.drive_wake_burst(item.delay_cycles);
             end
 
             powerpulse_seq_item::TRANS_NOP: begin
@@ -78,27 +72,6 @@ class powerpulse_driver extends uvm_driver #(powerpulse_seq_item);
             end
         endcase
     endtask: drive_transaction
-
-    // Transmit one 8N1 serial UART byte over uart_rx pin
-    virtual task send_uart_byte(bit [7:0] data);
-        int i;
-        // Start bit (Low)
-        vif.uart_rx <= 1'b0;
-        repeat (clocks_per_baud) @(posedge vif.clk);
-
-        // 8 Data bits (LSB first)
-        for (i = 0; i < 8; i++) begin
-            vif.uart_rx <= data[i];
-            repeat (clocks_per_baud) @(posedge vif.clk);
-        end
-
-        // Stop bit (High)
-        vif.uart_rx <= 1'b1;
-        repeat (clocks_per_baud) @(posedge vif.clk);
-
-        // Inter-character guard time
-        repeat (clocks_per_baud / 2) @(posedge vif.clk);
-    endtask: send_uart_byte
 
 endclass: powerpulse_driver
 

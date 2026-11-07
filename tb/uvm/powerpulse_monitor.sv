@@ -94,19 +94,19 @@ class powerpulse_monitor extends uvm_monitor;
         end
     endtask: monitor_gpio_out
 
-    // Process 3: Monitor Timer and GPIO Interrupts
+    // Process 3: Monitor Timer, GPIO and UART Interrupts
     virtual task monitor_interrupts();
         powerpulse_seq_item item;
 
         forever begin
             @(posedge vif.clk);
-            if (vif.timer_irq || vif.gpio_irq) begin
+            if (vif.timer_irq || vif.gpio_irq || vif.uart_irq) begin
                 item = powerpulse_seq_item::type_id::create("irq_mon_item");
                 item.timer_irq_sample = vif.timer_irq;
                 item.gpio_irq_sample  = vif.gpio_irq;
                 item.gpio_out_sample  = vif.gpio_out;
                 item.timestamp        = $time;
-                `uvm_info(get_type_name(), $sformatf("Monitored IRQ Assertion: Timer_IRQ=%0d, GPIO_IRQ=%0d", vif.timer_irq, vif.gpio_irq), UVM_MEDIUM)
+                `uvm_info(get_type_name(), $sformatf("Monitored IRQ Assertion: Timer_IRQ=%0d, GPIO_IRQ=%0d, UART_IRQ=%0d", vif.timer_irq, vif.gpio_irq, vif.uart_irq), UVM_MEDIUM)
                 item_collected_port.write(item);
             end
         end

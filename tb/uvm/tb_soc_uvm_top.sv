@@ -23,17 +23,15 @@ module tb_soc_uvm_top;
     end
 
     // --------------------------------------------------------------------------
-    // Interface Instance
+    // SystemVerilog Interface Instance
     // --------------------------------------------------------------------------
     powerpulse_soc_if soc_if (
         .clk (clk)
     );
 
     // --------------------------------------------------------------------------
-    // Design Under Test (DUT) Instance
+    // Design Under Test (DUT) Instance: PowerPulse SoC
     // --------------------------------------------------------------------------
-    wire uart_irq_unused;
-
     powerpulse_soc u_dut (
         .clk       (clk),
         .rst_n     (soc_if.rst_n),
@@ -41,20 +39,18 @@ module tb_soc_uvm_top;
         .uart_tx   (soc_if.uart_tx),
         .gpio_in   (soc_if.gpio_in),
         .gpio_out  (soc_if.gpio_out),
-        .uart_irq  (uart_irq_unused),
+        .uart_irq  (soc_if.uart_irq),
         .timer_irq (soc_if.timer_irq),
         .gpio_irq  (soc_if.gpio_irq)
     );
 
     // --------------------------------------------------------------------------
-    // Optional Waveform Dumping (Verdi FSDB & Standard VCD)
+    // Waveform Dumping (Verdi FSDB & Standard VCD)
     // --------------------------------------------------------------------------
     initial begin
-        string dump_vcd;
-        if ($value$plusargs("DUMP_VCD=%s", dump_vcd) || $test$plusargs("DUMP")) begin
-            $dumpfile("powerpulse_uvm.vcd");
-            $dumpvars(0, tb_soc_uvm_top);
-        end
+        $dumpfile("powerpulse_uvm.vcd");
+        $dumpvars(0, tb_soc_uvm_top);
+
 `ifdef FSDB
         $fsdbDumpfile("powerpulse_uvm.fsdb");
         $fsdbDumpvars(0, tb_soc_uvm_top);
@@ -62,25 +58,38 @@ module tb_soc_uvm_top;
     end
 
     // --------------------------------------------------------------------------
-    // Memory Backdoor Hex Loading for Firmware execution
+    // Memory Backdoor Hex Loading for Firmware Execution
     // --------------------------------------------------------------------------
     initial begin
         string hex_file;
-        if ($value$plusargs("HEX=%s", hex_file)) begin
+        if ($value$plusargs("HEX=%s", hex_file) || $value$plusargs("hex=%s", hex_file)) begin
             `uvm_info("UVM_TOP", $sformatf("Loading Firmware HEX into IMEM: %s", hex_file), UVM_LOW)
-            $readmemh(hex_file, u_dut.u_fabric.u_s0_imem.mem);
+            $readmemh(hex_file, u_dut.u_fabric.u_imem.mem);
         end
     end
 
     // --------------------------------------------------------------------------
-    // Testbench Initialization and UVM Phase Start
+    // Virtual Interface Configuration and UVM Phase Start
     // --------------------------------------------------------------------------
     initial begin
-        // Store virtual interface in uvm_config_db
-        uvm_config_db#(virtual powerpulse_soc_if)::set(null, "*", "vif", soc_if);
+        // Configure virtual interface handles using uvm_config_db::set()
+        // 1. Specific hierarchical path for agent and its driver/monitor components
+        uvm_config_db#(virtual powerpulse_soc_if)::set(
+            null,
+            "uvm_test_top.env.agent*",
+            "vif",
+            soc_if
+        );
 
-        // Run the test passed on the command line via +UVM_TESTNAME=<test>
-        // Defaults to powerpulse_base_test if omitted
+        // 2. Fallback wildcard path across entire testbench scope
+        uvm_config_db#(virtual powerpulse_soc_if)::set(
+            null,
+            "*",
+            "vif",
+            soc_if
+        );
+
+        // Launch UVM test (passed via +UVM_TESTNAME=<test>, defaults to powerpulse_base_test)
         run_test("powerpulse_base_test");
     end
 
