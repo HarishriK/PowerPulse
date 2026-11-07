@@ -44,3 +44,15 @@ verdi:
 
 clean:
 	rm -rf simv* csrc *.daidir *.log ucli.key *.vcd *.fsdb DVEfiles verdiLog novas.* fsdbreportLog *.txt
+
+# ------------------------------------------------------------------------------
+# Dedicated UART Interface Testbench Targets
+# ------------------------------------------------------------------------------
+uart_comp:
+	$(VCS) $(VCS_FLAGS) -f $(FILELIST) -top tb_uart_top -l compile_uart.log
+
+uart_run:
+	./simv +UVM_TESTNAME=uart_base_test +UVM_VERBOSITY=$(VERBOSITY) +DUMP -l sim_uart.log
+
+uart_verdi:
+	$(VERDI_HOME)/bin/verdi -ssf uart_uvm.fsdb -sswr uart_signals.rc &

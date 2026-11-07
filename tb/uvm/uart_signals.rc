@@ -1,0 +1,34 @@
+Magic 271485
+Revision Verdi_U-2023.03-SP1
+
+viewPort 0 28 1280 650 240 100
+openDirFile -d / "" "/home/student/Music/013/PowerPulse/tb/uvm/uart_uvm.fsdb"
+signalSpacing 5
+
+zoom 0.000000 1350000000.000000
+cursor 82970000.000000
+marker 0.000000
+top 0
+curSTATUS ByChange
+
+addGroup "1. Clock & Reset"
+activeDirFile "" "/home/student/Music/013/PowerPulse/tb/uvm/uart_uvm.fsdb"
+addSignal -h 15 /tb_uart_top/clk
+addSignal -h 15 /tb_uart_top/uart_if_inst/rst_n
+
+addGroup "2. UART_Driver (vif.drv_*)"
+addSignal -h 15 /tb_uart_top/uart_if_inst/drv_drive_en
+addSignal -h 15 -holdScope drv_uart_rx_reg
+
+addGroup "3. UART_Interface_Pins"
+addSignal -h 15 /tb_uart_top/uart_if_inst/uart_rx
+addSignal -h 15 -holdScope uart_tx
+addSignal -h 15 -holdScope uart_irq
+
+addGroup "4. Inside_DUT_Design"
+addSignal -h 15 -UNSIGNED -HEX /tb_uart_top/u_dut/u_fabric/u_uart/u_uart/u_receiver/rx_data_o[7:0]
+addSignal -h 15 -holdScope rx_valid_o
+
+addGroup "5. UART_Monitor (vif.mon_*)"
+addSignal -h 15 -UNSIGNED -HEX /tb_uart_top/uart_if_inst/mon_uart_rx_byte[7:0]
+addSignal -h 15 -holdScope mon_uart_rx_valid

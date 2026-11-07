@@ -116,3 +116,6 @@ powerpulse_soc_if.sv
 powerpulse_uvm_pkg.sv
 tb_soc_uvm_top.sv
 tb_top.sv
+uart_if.sv
+uart_uvm_pkg.sv
+tb_uart_top.sv
