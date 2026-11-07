@@ -631,6 +631,7 @@ module pp_soc_interconnect #(
     wire       wakeup_req;
     wire [1:0] wakeup_source_id;
 
+    wire uart_activity;
     wire timer_activity, timer_wake;
     wire gpio_activity, gpio_wake;
 
