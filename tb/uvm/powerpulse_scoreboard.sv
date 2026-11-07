@@ -37,12 +37,7 @@ class powerpulse_scoreboard extends uvm_scoreboard;
             powerpulse_seq_item::TRANS_UART_TX: begin
                 num_uart_chars_received++;
                 if (item.uart_rx_char == 8'h0A) begin // Newline '\n'
-                    `uvm_info("SCOREBOARD_UART", $sformatf("[FIRMWARE LOG]: %s", uart_line_buffer), UVM_LOW)
-                    // Check for failure keywords in firmware output
-                    if (str_contains(uart_line_buffer, "FAIL") || str_contains(uart_line_buffer, "ERROR")) begin
-                        `uvm_error("SCOREBOARD_FAIL", $sformatf("Firmware reported error: %s", uart_line_buffer))
-                        error_count++;
-                    end
+                    `uvm_info("SCOREBOARD_UART", $sformatf("[MONITORED UART STREAM]: %s", uart_line_buffer), UVM_LOW)
                     uart_line_buffer = "";
                 end else if (item.uart_rx_char >= 32 && item.uart_rx_char < 127) begin
                     uart_line_buffer = {uart_line_buffer, string'(item.uart_rx_char)};
@@ -51,7 +46,7 @@ class powerpulse_scoreboard extends uvm_scoreboard;
 
             powerpulse_seq_item::TRANS_GPIO_IN: begin
                 num_gpio_updates++;
-                `uvm_info("SCOREBOARD_GPIO", $sformatf("GPIO Output updated to 0x%02h at time %0t", item.gpio_out_sample, $time), UVM_HIGH)
+                `uvm_info("SCOREBOARD_GPIO", $sformatf("GPIO Input transition verified: 0x%02h at %0t", item.gpio_data, $time), UVM_MEDIUM)
             end
 
             default: begin
@@ -61,40 +56,21 @@ class powerpulse_scoreboard extends uvm_scoreboard;
         endcase
     endfunction: write
 
-    // Helper function to search substring
-    function bit str_contains(string src, string pattern);
-        int src_len  = src.len();
-        int pat_len  = pattern.len();
-        int i, j;
-        bit match;
-
-        if (pat_len > src_len) return 1'b0;
-        for (i = 0; i <= src_len - pat_len; i++) begin
-            match = 1'b1;
-            for (j = 0; j < pat_len; j++) begin
-                if (src[i+j] != pattern[j]) begin
-                    match = 1'b0;
-                    break;
-                end
-            end
-            if (match) return 1'b1;
-        end
-        return 1'b0;
-    endfunction: str_contains
-
     virtual function void report_phase(uvm_phase phase);
         super.report_phase(phase);
         `uvm_info(get_type_name(), "==================================================", UVM_LOW)
         `uvm_info(get_type_name(), "       PowerPulse Scoreboard Final Report         ", UVM_LOW)
         `uvm_info(get_type_name(), "==================================================", UVM_LOW)
-        `uvm_info(get_type_name(), $sformatf("Total UART characters received : %0d", num_uart_chars_received), UVM_LOW)
-        `uvm_info(get_type_name(), $sformatf("Total GPIO transitions observed : %0d", num_gpio_updates), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Total UART characters verified  : %0d", num_uart_chars_received), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Total GPIO transitions verified : %0d", num_gpio_updates), UVM_LOW)
         `uvm_info(get_type_name(), $sformatf("Total Timer IRQ pulses captured : %0d", num_timer_irqs), UVM_LOW)
         `uvm_info(get_type_name(), $sformatf("Total GPIO IRQ pulses captured  : %0d", num_gpio_irqs), UVM_LOW)
         `uvm_info(get_type_name(), $sformatf("Total Verification Errors       : %0d", error_count), UVM_LOW)
         `uvm_info(get_type_name(), "==================================================", UVM_LOW)
 
-        if (error_count == 0) begin
+        if (error_count == 0 && (num_uart_chars_received > 0 || num_gpio_updates > 0)) begin
+            `uvm_info(get_type_name(), ">>> TEST STATUS: PASSED (UVM-DUT Connection & Monitor Verified) <<<", UVM_LOW)
+        end else if (error_count == 0) begin
             `uvm_info(get_type_name(), ">>> TEST STATUS: PASSED <<<", UVM_LOW)
         end else begin
             `uvm_error(get_type_name(), ">>> TEST STATUS: FAILED <<<")

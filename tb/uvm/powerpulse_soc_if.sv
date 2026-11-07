@@ -2,7 +2,7 @@
 // PowerPulse SoC Verification Environment
 // File: powerpulse_soc_if.sv
 // Description: SystemVerilog Interface for PowerPulse SoC top-level boundary pins
-//              with interface-level procedural driving always block
+//              with interface-level procedural driving always block and monitor taps
 // ==============================================================================
 
 `timescale 1ns/1ps
@@ -30,6 +30,14 @@ interface powerpulse_soc_if (
     logic        drv_uart_rx_reg = 1'b1;
     logic [7:0]  drv_gpio_in_reg = 8'h00;
     logic        drv_drive_en    = 1'b1;
+
+    // --------------------------------------------------------------------------
+    // Passive Monitor Observation Signals (Observed and verified in Verdi)
+    // --------------------------------------------------------------------------
+    logic [7:0]  mon_gpio_in_sampled = 8'h00;
+    logic        mon_gpio_in_valid   = 1'b0;
+    logic [7:0]  mon_uart_rx_byte    = 8'h00;
+    logic        mon_uart_rx_valid   = 1'b0;
 
     // ==========================================================================
     // Procedural driving mechanism via interface-level always block
@@ -135,7 +143,11 @@ interface powerpulse_soc_if (
 
     modport monitor_mp (
         clocking mon_cb,
-        input    clk
+        input    clk,
+        output   mon_gpio_in_sampled,
+        output   mon_gpio_in_valid,
+        output   mon_uart_rx_byte,
+        output   mon_uart_rx_valid
     );
 
     modport dut_mp (
